@@ -1,0 +1,80 @@
+name: Minecraft Server Pixelmon
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [Start-Minecraft]
+
+jobs:
+  start-vps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      # 1️⃣ Tạo folder backup
+      - name: 📁 Prepare backup folder
+        run: mkdir -p .backup
+
+      # 2️⃣ Restore backup nếu có
+      - name: 💾 Restore backup (optional)
+        run: |
+          if [ -f ".backup/backup.zip" ]; then
+            unzip -o ".backup/backup.zip" -d server/
+            echo "✅ Backup restored"
+          else
+            echo "⚠️ No backup found"
+          fi
+
+      # 3️⃣ Download Playit Linux CLI
+      - name: ⬇️ Download Playit
+        run: |
+          wget -O playit https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64
+          chmod +x playit
+          nohup ./playit --secret 27b8c3d202823e43416721a8b026d78847f62426a54e14031fb2314d7d05bfcd &
+
+      # 4️⃣ Tạo folder server
+      - name: 📂 Create server directory
+        run: mkdir -p server
+
+      # 5️⃣ Di chuyển file ZIP vào server
+      - name: 🚚 Move server.zip to server/
+        run: mv server.zip server/
+
+      # 6️⃣ Giải nén server.zip
+      - name: 📦 Unzip server
+        run: |
+          cd server
+          unzip -o server.zip
+          rm server.zip
+
+      # 7️⃣ Chạy Minecraft server ẩn nền
+      - name: ▶️ Run Minecraft server
+        run: |
+          cd server
+          echo "eula=true" > eula.txt
+          nohup java -Xms1G -Xmx6G -jar server.jar nogui &
+
+      # 8️⃣ Giữ VPS alive (tùy chọn)
+      - name: ⏳ Keep VPS alive
+        run: |
+          for i in $(seq 1 $((180))); do
+            echo "🟢 Running minute $i/180..."
+            sleep 60
+          done
+
+      # 9️⃣ Backup server
+      - name: 💾 Backup server
+        working-directory: server
+        run: |
+          mkdir -p ../.backup
+          rm -f ../.backup/*.zip
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          BACKUP_FILE="../.backup/backup-$TIMESTAMP.zip"
+          zip -r "$BACKUP_FILE" ./*
+          echo "✅ Backup completed: $BACKUP_FILE"
+
+      # 10️⃣ Upload artifact (không push repo)
+      - uses: actions/upload-artifact@v3
+        with:
+          name: minecraft-backup
+          path: .backup/*.zip
