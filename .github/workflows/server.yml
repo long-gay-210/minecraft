@@ -30,7 +30,7 @@ jobs:
           tmate -S /tmp/tmate.sock new-session -d
           tmate -S /tmp/tmate.sock wait tmate-ready
           SSH=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-          echo "$SSH" | tee "links/${{ github.event.client_payload.vps_name || 'manual-vps' }}.txt"
+          echo "$SSH" | tee "${{ github.event.client_payload.vps_name || 'manual-vps' }}.txt"
 
       - name: 🚀 Start Playit Tunnel
         run: |
