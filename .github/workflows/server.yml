@@ -3,76 +3,61 @@ name: Minecraft Server Pixelmon
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [Start-Minecraft]
+    types: [Start-Server]
 
 jobs:
   start-vps:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 180  # 3 hours
 
     steps:
-      - name: 📁 Prepare folders
-        run: |
-          mkdir -p .backup
-          mkdir -p server
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v3
+
+      - name: 📁 Prepare dirs
+        run: mkdir -p links .backup
 
       - name: 💾 Restore backup (optional)
         run: |
-          if [ -f ".backup/backup.zip" ]; then
-            unzip -o ".backup/backup.zip" -d server/
-            echo "✅ Backup restored"
-          else
-            echo "⚠️ No backup found"
+          name="${{ github.event.client_payload.server_name || 'server-minecraft' }}"
+          if [ "${{ github.event.client_payload.backup }}" == "true" ]; then
+            unzip ".backup/$name.zip" -d . || echo "⚠️ No backup found."
           fi
 
-      - name: ⬇️ Download Playit
+      - name: 🔐 Start tmate session
         run: |
-          wget -O playit https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64
+          sudo apt update -y && sudo apt install -y tmate
+          tmate -S /tmp/tmate.sock new-session -d
+          tmate -S /tmp/tmate.sock wait tmate-ready
+          SSH=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+          echo "$SSH" | tee "links/${{ github.event.client_payload.vps_name || 'manual-vps' }}.txt"
+
+      - name: 🚀 Start Playit Tunnel
+        run: |
+          wget -q https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64 -O playit
           chmod +x playit
-          nohup ./playit --secret 27b8c3d202823e43416721a8b026d78847f62426a54e14031fb2314d7d05bfcd &
-
-      - name: ⬇️ Download server.zip from Google Drive
-        run: |
-          FILE_ID="1PhG0nAZZV-MATixEGAxKYbV2MMeexPVq"
-          echo "⬇️ Downloading server.zip from Drive..."
-          wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${FILE_ID}" -O server.zip
-          echo "✅ Download complete"
-
-      - name: 🚚 Move server.zip to server/
-        run: mv server.zip server/
-
-      - name: 📦 Unzip server
-        run: |
-          cd server
-          unzip -o server.zip
-          rm server.zip
-          echo "✅ Server unzipped"
+          nohup ./playit --secret 27b8c3d202823e43416721a8b026d78847f62426a54e14031fb2314d7d05bfcd > playit.log 2>&1 &
+          echo "✅ Playit started in background."
 
       - name: ▶️ Run Minecraft server
         run: |
-          cd server
           echo "eula=true" > eula.txt
           nohup java -Xms1G -Xmx6G -jar server.jar nogui &
 
+      - name: 📦 Save backup
+        run: |
+          name="${{ github.event.client_payload.server_name || 'server-minecraft' }}"
+          zip -qr ".backup/$name.zip" . -x ".git/*" ".github/*" ".backup/*" || true
+
+      - name: 📤 Push updated files
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🔁 Updated backup"
+          file_pattern: '.backup/*.zip'
+
       - name: ⏳ Keep VPS alive
         run: |
-          for i in $(seq 1 180); do
+          for i in $(seq 1 $((180))); do
             echo "🟢 Running minute $i/180..."
             sleep 60
           done
-
-      - name: 💾 Backup server
-        working-directory: server
-        run: |
-          mkdir -p ../.backup
-          rm -f ../.backup/*.zip
-          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-          BACKUP_FILE="../.backup/backup-$TIMESTAMP.zip"
-          zip -r "$BACKUP_FILE" ./*
-          echo "✅ Backup completed: $BACKUP_FILE"
-
-      - name: ⬆️ Upload Minecraft backup
-        uses: actions/upload-artifact@v4
-        with:
-          name: minecraft-backup
-          path: .backup/*.zip
