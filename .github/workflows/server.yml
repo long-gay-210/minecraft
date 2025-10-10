@@ -11,11 +11,11 @@ jobs:
     timeout-minutes: 180
 
     steps:
-      # 1️⃣ Tạo folder backup
-      - name: 📁 Prepare backup folder
-        run: mkdir -p .backup
+      - name: 📁 Prepare folders
+        run: |
+          mkdir -p .backup
+          mkdir -p server
 
-      # 2️⃣ Restore backup nếu có
       - name: 💾 Restore backup (optional)
         run: |
           if [ -f ".backup/backup.zip" ]; then
@@ -25,44 +25,42 @@ jobs:
             echo "⚠️ No backup found"
           fi
 
-      # 3️⃣ Download Playit Linux CLI
       - name: ⬇️ Download Playit
         run: |
           wget -O playit https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64
           chmod +x playit
           nohup ./playit --secret 27b8c3d202823e43416721a8b026d78847f62426a54e14031fb2314d7d05bfcd &
 
-      # 4️⃣ Tạo folder server
-      - name: 📂 Create server directory
-        run: mkdir -p server
+      - name: ⬇️ Download server.zip from Google Drive
+        run: |
+          FILE_ID="1PhG0nAZZV-MATixEGAxKYbV2MMeexPVq"
+          echo "⬇️ Downloading server.zip from Drive..."
+          wget --no-check-certificate "https://drive.google.com/uc?export=download&id=${FILE_ID}" -O server.zip
+          echo "✅ Download complete"
 
-      # 5️⃣ Di chuyển file ZIP vào server
       - name: 🚚 Move server.zip to server/
         run: mv server.zip server/
 
-      # 6️⃣ Giải nén server.zip
       - name: 📦 Unzip server
         run: |
           cd server
           unzip -o server.zip
           rm server.zip
+          echo "✅ Server unzipped"
 
-      # 7️⃣ Chạy Minecraft server ẩn nền
       - name: ▶️ Run Minecraft server
         run: |
           cd server
           echo "eula=true" > eula.txt
           nohup java -Xms1G -Xmx6G -jar server.jar nogui &
 
-      # 8️⃣ Giữ VPS alive (tùy chọn)
       - name: ⏳ Keep VPS alive
         run: |
-          for i in $(seq 1 $((180))); do
+          for i in $(seq 1 180); do
             echo "🟢 Running minute $i/180..."
             sleep 60
           done
 
-      # 9️⃣ Backup server
       - name: 💾 Backup server
         working-directory: server
         run: |
@@ -73,8 +71,8 @@ jobs:
           zip -r "$BACKUP_FILE" ./*
           echo "✅ Backup completed: $BACKUP_FILE"
 
-      # 10️⃣ Upload artifact (không push repo)
-      - uses: actions/upload-artifact@v4
+      - name: ⬆️ Upload Minecraft backup
+        uses: actions/upload-artifact@v4
         with:
           name: minecraft-backup
           path: .backup/*.zip
