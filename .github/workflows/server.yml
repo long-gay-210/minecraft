@@ -24,13 +24,8 @@ jobs:
             unzip ".backup/$name.zip" -d . || echo "⚠️ No backup found."
           fi
 
-      - name: 🔐 Start tmate session
+      - name: 🔐 Start tmate session (download server)
         run: |
-          sudo apt update -y && sudo apt install -y tmate
-          tmate -S /tmp/tmate.sock new-session -d
-          tmate -S /tmp/tmate.sock wait tmate-ready
-          SSH=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
-          echo "$SSH" | tee "${{ github.event.client_payload.server_name || 'server-minecraft' }}.txt"
 
       - name: 🚀 Start Playit Tunnel
         run: |
@@ -43,6 +38,34 @@ jobs:
         run: |
           echo "eula=true" > eula.txt
           nohup java -Xms1G -Xmx6G -jar server.jar nogui &
+          echo $! > minecraft.pid
+          echo "✅ Server restarted successfully (new PID: $(cat minecraft.pid))"
+
+      - name: ⏳ Keep Server alive
+        run: |
+          pid_file="minecraft.pid"
+
+          # Nếu chưa có PID file thì báo lỗi và dừng
+          if [ ! -f "$pid_file" ]; then
+            echo "❌ PID file not found — server may not be running."
+            exit 1
+          fi
+
+          pid=$(cat "$pid_file")
+          echo "📡 Monitoring Minecraft server (PID: $pid)..."
+
+          # Kiểm tra trong 3 giờ (5 giây/lần = 2160 lần)
+          for i in $(seq 1 2160); do
+            if ps -p "$pid" > /dev/null 2>&1; then
+              echo "✅ Server (PID $pid) is running (check $i/2160)..."
+              sleep 5
+            else
+              echo "⚠️ Server stopped at check $i — will proceed to backup."
+              exit 0
+            fi
+          done
+
+          echo "⏰ Time limit reached (3h) — will proceed to backup."
 
       - name: 📦 Save backup
         run: |
@@ -54,10 +77,3 @@ jobs:
         with:
           commit_message: "🔁 Updated backup"
           file_pattern: '.backup/*.zip'
-
-      - name: ⏳ Keep VPS alive
-        run: |
-          for i in $(seq 1 $((180))); do
-            echo "🟢 Running minute $i/180..."
-            sleep 60
-          done
