@@ -11,8 +11,12 @@ jobs:
     timeout-minutes: 180  # 3 hours
 
     steps:
-      - name: ⬇️ Checkout
-        uses: actions/checkout@v3
+      - name: ⬇️ Download Server
+        run: |
+          wget -O b2 https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux
+          chmod +x b2
+          sudo mv b2 /usr/local/bin/
+        
 
       - name: 📁 Prepare dirs
         run: mkdir -p .backup
