@@ -26,6 +26,9 @@ jobs:
 
       - name: 🔐 Start tmate session (download server)
         run: |
+          wget https://download1350.mediafire.com/3h08wd502lhgpbnmQXmO6vd6CglZSrjZK4YVRT8sYrfx_zIo9crL3DBP14z6b6q00ZM9g0cWaWjSK6YP_MYsqanuhl9kAvuqzs_fMGpmCtXC8kzu84CBN7ejRCAASEA0A-I3ZbYhOezOr6IuZeu7rMlzftFRWrgkSF5jLUj8s2gMi9c/cb2wj5g31cxncfp/server.zip 
+          unzip server.zip
+          rm server.zip
 
       - name: 🚀 Start Playit Tunnel
         run: |
