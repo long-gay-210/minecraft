@@ -17,23 +17,20 @@ jobs:
           chmod +x b2
           sudo mv b2 /usr/local/bin/
           b2 account authorize 005f6a0bf64072a0000000002 K005O9tcKmCcdwwRDOjrKAOqhiDlsz4
-        
 
       - name: 📁 Prepare dirs
-        run: mkdir -p .backup
+        run: |
+          mkdir -p .backup
+          b2 file download b2://server-minecraft-backup/server.zip ./.backup/server.zip
 
       - name: 💾 Restore backup (optional)
         run: |
-          name="${{ github.event.client_payload.server_name || 'server' }}"
-          if [ "${{ github.event.client_payload.backup }}" == "true" ]; then
-            unzip ".backup/$name.zip" -d . || echo "⚠️ No backup found."
+          if [ -f ".backup/server.zip" ]; then
+            unzip -o ".backup/server.zip" -d .
+            echo "✅ Backup restored."
+          else
+            echo "⚠️ No backup found."
           fi
-
-      - name: 🔐 Start tmate session (download server)
-        run: |
-          wget https://download1350.mediafire.com/3h08wd502lhgpbnmQXmO6vd6CglZSrjZK4YVRT8sYrfx_zIo9crL3DBP14z6b6q00ZM9g0cWaWjSK6YP_MYsqanuhl9kAvuqzs_fMGpmCtXC8kzu84CBN7ejRCAASEA0A-I3ZbYhOezOr6IuZeu7rMlzftFRWrgkSF5jLUj8s2gMi9c/cb2wj5g31cxncfp/server.zip 
-          unzip server.zip
-          rm server.zip
 
       - name: 🚀 Start Playit Tunnel
         run: |
@@ -82,11 +79,17 @@ jobs:
 
       - name: 📦 Save backup
         run: |
-          name="${{ github.event.client_payload.server_name || 'server' }}"
-          zip -qr ".backup/$name.zip" . -x ".git/*" ".github/*" ".backup/*" || true
+          zip -qr ".backup/server.zip" . -x ".git/*" ".github/*" ".backup/*" || true
+          echo "✅ Backup saved as server.zip"
 
       - name: 📤 Push updated files
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "🔁 Updated backup"
-          file_pattern: '.backup/*.zip'
+        run: |
+          # Kiểm tra file backup tồn tại không
+          if [ -f ".backup/server.zip" ]; then
+            # Upload file lên bucket server-minecraft-backup
+            b2 file upload b2://server-minecraft-backup ./.backup/server.zip server.zip \
+              || echo "❌ Upload failed."
+            echo "✅ Backup uploaded to B2 as server.zip"
+          else
+            echo "⚠️ No backup file to upload."
+          fi
