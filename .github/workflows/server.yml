@@ -39,6 +39,9 @@ jobs:
 
       - name: ▶️ Run Minecraft server
         run: |
+          sudo apt update
+          sudo apt install -y openjdk-21-jdk
+          sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-21-openjdk-amd64/bin/java 1
           sudo update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
           java -version
           echo "eula=true" > eula.txt
