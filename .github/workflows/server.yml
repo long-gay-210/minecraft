@@ -36,7 +36,7 @@ jobs:
 
       - name: 💾 Restore backup (optional)
         run: |
-          rclone copy server-backup:/Backup/ .backup/ --transfers 16 --checkers 16
+          rclone copy server-backup:/server.zip .backup/ --transfers 16 --checkers 16
           if [ -f ".backup/server.zip" ]; then
             unzip -o ".backup/server.zip" -d .
             echo "✅ Backup restored."
