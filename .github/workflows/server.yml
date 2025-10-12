@@ -13,18 +13,29 @@ jobs:
     steps:
       - name: ⬇️ Download Server
         run: |
-          wget -O b2 https://github.com/Backblaze/B2_Command_Line_Tool/releases/latest/download/b2-linux
-          chmod +x b2
-          sudo mv b2 /usr/local/bin/
-          b2 account authorize 005f6a0bf64072a0000000002 K005O9tcKmCcdwwRDOjrKAOqhiDlsz4
+          curl https://rclone.org/install.sh | sudo bash
 
       - name: 📁 Prepare dirs
         run: |
+          echo "Creating rclone config..."
+          RCLONE_CONF="$HOME/.config/rclone/rclone.conf"
+          mkdir -p "$(dirname "$RCLONE_CONF")"
+          cat > "$RCLONE_CONF" <<EOL
+          [$REMOTE_NAME]
+          type = drive
+          client_id = 177351678679-j77al4hco0vgu0rtut2abm5b5lmkig34.apps.googleusercontent.com
+          client_secret = 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
+          scope = drive
+          token = {"access_token":"ya29.a0AQQ_BDSifCrCJbr79_A6XwifyY1PQ8eroN8ZPyuf1UHzGFC5ILTWReOqpTViQTJ1YQfxgwvT3goPQBEP3JwmHyPehFTkaed3U-RE51ctVttfg21h9SN6HURZ5q7H0VPVZF8hzHgfDRSvfpUJ60FeGzPf4LZdjDZ_jeKwvsQ5khr4dnMOXUdwYRgyLQ0T0qPuWGZ5F28aCgYKAfkSARMSFQHGX2MiH3XnI0aShRvkbtMDZM6IKw0206","token_type":"Bearer","refresh_token":"1//0e2O7UOQ46-HnCgYIARAAGA4SNwF-L9IroOcdI-89WyM0hhRssZPRdQd3Z8P0PQxYdC3g-BYmj7w5OmmF1mMlaB_4dxYv2jmBkIM","expiry":"2025-10-12T08:20:52.4800863+07:00","expires_in":3599}
+          team_drive =
+          EOL
+          echo "Testing rclone..."
+          rclone ls "$REMOTE_NAME": || { echo "Rclone test failed!"; exit 1; }
           mkdir -p .backup
-          b2 file download b2://server-minecraft-backup/server.zip ./.backup/server.zip
 
       - name: 💾 Restore backup (optional)
         run: |
+          rclone copy server-backup:/Backup/ .backup/ --transfers 16 --checkers 16
           if [ -f ".backup/server.zip" ]; then
             unzip -o ".backup/server.zip" -d .
             echo "✅ Backup restored."
@@ -86,10 +97,10 @@ jobs:
         run: |
           # Kiểm tra file backup tồn tại không
           if [ -f ".backup/server.zip" ]; then
-            # Upload file lên bucket server-minecraft-backup
-            b2 file upload b2://server-minecraft-backup ./.backup/server.zip server.zip \
+            # Upload file lên Drive
+            rclone copy .backup/server.zip server-backup: --update
               || echo "❌ Upload failed."
-            echo "✅ Backup uploaded to B2 as server.zip"
+            echo "✅ Backup uploaded to Drive as server.zip"
           else
             echo "⚠️ No backup file to upload."
           fi
