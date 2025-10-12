@@ -18,6 +18,7 @@ jobs:
       - name: 📁 Prepare dirs
         run: |
           echo "Creating rclone config..."
+          REMOTE_NAME="server-backup"
           RCLONE_CONF="$HOME/.config/rclone/rclone.conf"
           mkdir -p "$(dirname "$RCLONE_CONF")"
           cat > "$RCLONE_CONF" <<EOL
