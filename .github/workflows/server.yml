@@ -99,8 +99,7 @@ jobs:
           # Kiểm tra file backup tồn tại không
           if [ -f ".backup/server.zip" ]; then
             # Upload file lên Drive
-            rclone copy .backup/server.zip server-backup: --update
-              || echo "❌ Upload failed."
+            rclone copy .backup/server.zip server-backup: --update || echo "❌ Upload failed."
             echo "✅ Backup uploaded to Drive as server.zip"
           else
             echo "⚠️ No backup file to upload."
