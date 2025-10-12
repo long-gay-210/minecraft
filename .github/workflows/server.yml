@@ -76,10 +76,10 @@ jobs:
           pid=$(cat "$pid_file")
           echo "📡 Monitoring Minecraft server (PID: $pid)..."
 
-          # Kiểm tra trong 3 giờ (5 giây/lần = 2160 lần)
-          for i in $(seq 1 2160); do
+          # Kiểm tra trong 160 phút (5 giây/lần = 1920 lần)
+          for i in $(seq 1 1920); do
             if ps -p "$pid" > /dev/null 2>&1; then
-              echo "✅ Server (PID $pid) is running (check $i/2160)..."
+              echo "✅ Server (PID $pid) is running (check $i/1920)..."
               sleep 5
             else
               echo "⚠️ Server stopped at check $i — will proceed to backup."
@@ -87,7 +87,7 @@ jobs:
             fi
           done
 
-          echo "⏰ Time limit reached (3h) — will proceed to backup."
+          echo "⏰ Time limit reached (160m) — will proceed to backup."
 
       - name: 📦 Save backup
         run: |
