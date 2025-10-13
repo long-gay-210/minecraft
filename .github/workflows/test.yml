@@ -1,0 +1,47 @@
+name: 🧪 Test Start/Stop Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Chọn hành động (start / stop)"
+        required: true
+        default: "start"
+  repository_dispatch:
+    types: [Start-Server, Stop-Server]
+
+jobs:
+  handle-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧩 Kiểm tra loại hành động
+        run: |
+          echo "🔍 Kiểm tra loại trigger..."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            ACTION="${{ github.event.inputs.action }}"
+          else
+            ACTION="${{ github.event.action }}"
+          fi
+
+          echo "🧠 Hành động được chọn: $ACTION"
+
+          if [ "$ACTION" = "start" ] || [ "$ACTION" = "Start-Server" ]; then
+            echo "🚀 Bắt đầu khởi động server..."
+            sleep 2
+            echo "✅ Server đã khởi động thành công!"
+          elif [ "$ACTION" = "stop" ] || [ "$ACTION" = "Stop-Server" ]; then
+            echo "🛑 Dừng server..."
+            sleep 5
+            for i in {5..1}; do
+              echo "⏳ Server sẽ dừng trong $i giây..."
+              sleep 1
+            done
+            echo "✅ Server đã được dừng thành công!"
+          else
+            echo "⚠️ Không nhận diện được hành động!"
+            exit 1
+          fi
