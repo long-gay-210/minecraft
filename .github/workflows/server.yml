@@ -128,7 +128,7 @@ jobs:
       - name: 🛑 Stop Minecraft Server via RCON
         run: |
           echo "🔐 Cấp quyền cho mcrcon..."
-          chmod +x ./mcrcon
+          chmod +x mcrcon
 
           echo "📢 Gửi thông báo..."
           ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server will stop in 10 seconds!"
