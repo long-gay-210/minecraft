@@ -122,14 +122,25 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: ⬇️ Checkout repo
-        uses: actions/checkout@v4
-
-      - name: 🛑 Stop Minecraft Server via RCON
+      - name: 📦 Download mcrcon
         run: |
+          curl -L -o mcrcon.tar.gz https://github.com/Tiiffi/mcrcon/releases/download/v0.7.2/mcrcon-0.7.2-linux-x86-64.tar.gz
+          tar -xzf mcrcon.tar.gz
           echo "🔐 Cấp quyền cho mcrcon..."
           chmod +x mcrcon
 
+      - name: 🔍 Test RCON Connection
+        continue-on-error: true
+        run: |
+          echo "🧠 Testing RCON connectivity..."
+          if timeout 5 ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "list"; then
+            echo "✅ RCON connection successful!"
+          else
+            echo "⚠️ RCON connection failed or timed out!"
+          fi
+
+      - name: 🛑 Stop Minecraft Server via RCON
+        run: |
           echo "📢 Gửi thông báo..."
           ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server will stop in 10 seconds!"
           sleep 5
