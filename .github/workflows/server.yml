@@ -1,14 +1,22 @@
-name: Minecraft Server Pixelmon
+name: 🎮 Minecraft Server Pixelmon
 
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Chọn hành động (start / stop)"
+        required: true
+        default: "start"
   repository_dispatch:
-    types: [Start-Server]
+    types: [Start-Server, Stop-Server]
 
 jobs:
-  start-vps:
+  start-server:
+    if: >
+      (github.event_name == 'repository_dispatch' && github.event.action == 'Start-Server')
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'start')
     runs-on: ubuntu-latest
-    timeout-minutes: 180  # 3 hours
+    timeout-minutes: 180  # 3 giờ
 
     steps:
       - name: ⬇️ Download Server
@@ -104,3 +112,33 @@ jobs:
           else
             echo "⚠️ No backup file to upload."
           fi
+
+
+  stop-server:
+    if: >
+      (github.event_name == 'repository_dispatch' && github.event.action == 'Stop-Server')
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'stop')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 🛑 Stop Minecraft Server via RCON
+        run: |
+          echo "🔐 Cấp quyền cho mcrcon..."
+          chmod +x ./mcrcon
+
+          echo "📢 Gửi thông báo..."
+          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server will stop in 10 seconds!"
+          sleep 5
+          for i in {5..1}; do
+            ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server will stop in $i seconds!"
+            sleep 1
+          done
+
+          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server is stopping now!"
+          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "stop"
+
+          echo "✅ Server stopped successfully!"
