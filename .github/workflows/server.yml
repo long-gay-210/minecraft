@@ -129,27 +129,21 @@ jobs:
           echo "🔐 Cấp quyền cho mcrcon..."
           chmod +x mcrcon
 
-      - name: 🔍 Test RCON Connection
-        continue-on-error: true
-        run: |
-          echo "🧠 Testing RCON connectivity..."
-          if timeout 5 ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "list"; then
-            echo "✅ RCON connection successful!"
-          else
-            echo "⚠️ RCON connection failed or timed out!"
-          fi
-
       - name: 🛑 Stop Minecraft Server via RCON
         run: |
           echo "📢 Gửi thông báo..."
-          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server will stop in 10 seconds!"
-          sleep 5
-          for i in {5..1}; do
-            ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server will stop in $i seconds!"
-            sleep 1
-          done
-
-          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "say Server is stopping now!"
-          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 "stop"
-
+          ./mcrcon -H 147.185.221.229 -P 24907 -p 26022009 -w 1 \
+            "say Server will stop in 10 seconds!" \
+            "say Server will stop in 9 seconds!" \
+            "say Server will stop in 8 seconds!" \
+            "say Server will stop in 7 seconds!" \
+            "say Server will stop in 6 seconds!" \
+            "say Server will stop in 5 seconds!" \
+            "say Server will stop in 4 seconds!" \
+            "say Server will stop in 3 seconds!" \
+            "say Server will stop in 2 seconds!" \
+            "say Server will stop in 1 second!" \
+            "say Server is stopping now!" \
+            "stop"
           echo "✅ Server stopped successfully!"
+
