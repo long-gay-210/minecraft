@@ -1,11 +1,9 @@
 {
   "name": "My Codespace",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  
-  // Chạy khi Codespace được tạo mới
-  "postCreateCommand": "chmod +x .devcontainer/start.sh && echo 'start.sh permission set'",
 
-  // Chạy mỗi khi Codespace start
+  "postCreateCommand": "chmod +x .devcontainer/start.sh && echo '✅ start.sh permission set'",
+
   "postStartCommand": "bash .devcontainer/start.sh",
 
   "customizations": {
