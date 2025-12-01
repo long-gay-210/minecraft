@@ -1,0 +1,19 @@
+{
+  "name": "My Codespace",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  
+  // Chạy khi Codespace được tạo mới
+  "postCreateCommand": "chmod +x .devcontainer/start.sh && echo 'start.sh permission set'",
+
+  // Chạy mỗi khi Codespace start
+  "postStartCommand": "bash .devcontainer/start.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "vscjava.vscode-java-pack"
+      ]
+    }
+  }
+}
